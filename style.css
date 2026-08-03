@@ -1,0 +1,185 @@
+/* パパ吉じゃんけん スタイル（スマートフォン縦画面 最適化） */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+    height: 100%;
+}
+
+body {
+    font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
+    text-align: center;
+    background-color: #222;
+    margin: 0;
+    min-height: 100dvh;
+    display: flex;
+    justify-content: center;
+}
+
+#game-container {
+    width: 100%;
+    max-width: 480px; /* PCで見た時もスマホ相当の幅に収める */
+    min-height: 100dvh;
+    margin: 0 auto;
+    background-color: #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    padding: env(safe-area-inset-top, 12px) env(safe-area-inset-right, 12px)
+             env(safe-area-inset-bottom, 12px) env(safe-area-inset-left, 12px);
+}
+
+h1 {
+    margin: 4px 0 10px;
+    font-size: clamp(1.2rem, 5vw, 1.6rem);
+    color: #333;
+}
+
+#video-stage {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 9 / 16; /* 動画素材(1080x1920)に合わせた縦型 */
+    max-height: 62dvh;
+    margin: 0 auto;
+    background-color: black;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+video {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    background-color: black;
+}
+
+/* あいこ動画が無い場合のテキスト演出 */
+#draw-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #ffe066, #ffa94d);
+    color: #5c3d00;
+    font-size: clamp(1.6rem, 8vw, 2.4rem);
+    font-weight: bold;
+    text-align: center;
+    padding: 20px;
+}
+
+#status-line {
+    margin-top: 10px;
+    min-height: 1.4em;
+    font-size: clamp(0.85rem, 3.6vw, 1rem);
+    color: #444;
+}
+
+#controls {
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#hand-buttons {
+    display: flex;
+    justify-content: center;
+    gap: clamp(6px, 2.5vw, 14px);
+}
+
+.janken-btn {
+    flex: 1 1 0;
+    max-width: 120px;
+    font-size: clamp(1.1rem, 5.5vw, 1.6rem);
+    padding: clamp(10px, 3vw, 16px) 4px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+    transition: background-color 0.2s, transform 0.1s;
+}
+.janken-btn:active:not(:disabled) { transform: scale(0.95); }
+.janken-btn:disabled { background-color: #ddd; cursor: not-allowed; opacity: 0.6; }
+
+#btn-goo { background-color: #ffcccc; }
+#btn-choki { background-color: #ccffcc; }
+#btn-par { background-color: #ccccff; }
+
+#again-btn {
+    display: none;
+    width: 100%;
+    font-size: clamp(1rem, 4.5vw, 1.15rem);
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    background-color: #495057;
+    color: white;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+#again-btn:active { background-color: #343a40; }
+
+#history-section {
+    margin-top: 16px;
+    text-align: left;
+}
+#history-section summary {
+    font-size: 1em;
+    font-weight: bold;
+    color: #333;
+    padding: 10px 4px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    list-style: none;
+}
+#history-section summary::-webkit-details-marker { display: none; }
+#history-section summary::after {
+    content: '▾';
+    transition: transform 0.2s;
+}
+#history-section[open] summary::after { transform: rotate(180deg); }
+
+#clear-history-btn {
+    font-size: 0.7em;
+    padding: 5px 12px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #fafafa;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+#clear-history-btn:active { background: #eee; }
+
+.table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+table#history-table {
+    width: 100%;
+    min-width: 380px;
+    border-collapse: collapse;
+    font-size: 0.85em;
+}
+#history-table th, #history-table td {
+    border-bottom: 1px solid #e0e0e0;
+    padding: 6px 6px;
+    text-align: center;
+    white-space: nowrap;
+}
+#history-table th { color: #777; font-weight: normal; }
+
+.result-win  { color: #2f9e44; font-weight: bold; }
+.result-lose { color: #e03131; font-weight: bold; }
+.result-draw { color: #f08c00; font-weight: bold; }
+
+#history-empty { color: #999; padding: 10px 4px; }
+
+/* ある程度背が高い画面では余白を持たせて中央寄せ感を出す */
+@media (min-width: 480px) {
+    body { background-color: #222; }
+    #game-container { box-shadow: 0 0 24px rgba(0,0,0,0.4); }
+}

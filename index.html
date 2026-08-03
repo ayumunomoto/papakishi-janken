@@ -2,189 +2,55 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>パパ吉じゃんけんゲーム</title>
-    <style>
-        /* WEBサイトのデザイン設定 */
-        body { font-family: sans-serif; text-align: center; background-color: #f0f0f0; padding: 20px; }
-        #game-container { max-width: 640px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        
-        video { width: 100%; border-radius: 5px; background-color: black; } /* 動画エリア */
-        
-        #controls { margin-top: 20px; }
-        #countdown { font-size: 2em; color: red; font-weight: bold; margin-bottom: 10px; display: none; } /* カウントダウン */
-        
-        /* じゃんけんボタン */
-        .janken-btn { font-size: 2em; padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
-        .janken-btn:disabled { background-color: #ccc; cursor: not-allowed; } /* 押せない時 */
-        
-        /* ボタンの色 */
-        #btn-goo { background-color: #ffcccc; }
-        #btn-goo:hover { background-color: #ff9999; }
-        #btn-cho { background-color: #ccffcc; }
-        #btn-cho:hover { background-color: #99ff99; }
-        #btn-par { background-color: #ccccff; }
-        #btn-par:hover { background-color: #9999ff; }
-        
-        /* 選択されたボタンを目立たせる */
-        .janken-btn.selected { outline: 5px solid blue; }
-
-        #start-btn { font-size: 1.2em; padding: 10px 20px; }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+    <title>パパ吉じゃんけん</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <div id="game-container">
     <h1>パパ吉じゃんけん</h1>
 
-    <video id="papakichi-video" poster="images/poster.jpg">
-        <source src="videos/story.mp4" type="video/mp4">
-        お使いのブラウザは動画再生に対応していません。
-    </video>
+    <div id="video-stage">
+        <video id="papakichi-video" playsinline>
+            お使いのブラウザは動画再生に対応していません。
+        </video>
+        <div id="draw-overlay"></div>
+    </div>
+
+    <div id="status-line"></div>
 
     <div id="controls">
-        <button id="start-btn">じゃんけんスタート！</button>
-
-        <div id="countdown">5</div>
-
-        <div id="janken-buttons" style="display: none;">
-            <button id="btn-goo" class="janken-btn" onclick="playerSelect('goo')">✊</button>
-            <button id="btn-cho" class="janken-btn" onclick="playerSelect('cho')">✌️</button>
-            <button id="btn-par" class="janken-btn" onclick="playerSelect('par')">✋</button>
+        <div id="hand-buttons">
+            <button id="btn-goo" class="janken-btn" data-hand="goo">✊<br>グー</button>
+            <button id="btn-choki" class="janken-btn" data-hand="choki">✌️<br>チョキ</button>
+            <button id="btn-par" class="janken-btn" data-hand="par">✋<br>パー</button>
         </div>
+        <button id="again-btn">もう一度じゃんけんする</button>
     </div>
+
+    <details id="history-section">
+        <summary>
+            じゃんけん履歴
+            <button id="clear-history-btn">履歴を削除</button>
+        </summary>
+        <div id="history-empty">まだ記録がありません</div>
+        <div class="table-scroll">
+            <table id="history-table">
+                <thead>
+                    <tr>
+                        <th>日時</th>
+                        <th>あなた</th>
+                        <th>パパ吉</th>
+                        <th>結果</th>
+                    </tr>
+                </thead>
+                <tbody id="history-body"></tbody>
+            </table>
+        </div>
+    </details>
 </div>
 
-<script>
-    // --- 動画ファイルのパス設定 (お手元のファイルに合わせて変更してください) ---
-    const vids = {
-        story: 'videos/story.mp4',       // 1. 本編（ハエ叩きなど）
-        janken: 'videos/janken.mp4',     // 2. じゃんけん（手がぐるぐる回る5秒）
-        win: 'videos/win.mp4',           // 3. 勝ち（ママ吉が褒めてくれる？）
-        lose: 'videos/lose.mp4',         // 4. 負け（白目むく？）
-        draw: 'videos/draw.mp4'          // 5. 引き分け（ぱぁっ！👐）
-    };
-    
-    // パパ吉が出す手（今回は「パー」で固定）
-    const papakichiHand = 'par'; 
-
-    // --- HTML要素の取得 ---
-    const video = document.getElementById('papakichi-video');
-    const startBtn = document.getElementById('start-btn');
-    const countdownDiv = document.getElementById('countdown');
-    const jankenBtnsDiv = document.getElementById('janken-buttons');
-    const jankenButtons = document.querySelectorAll('.janken-btn');
-
-    let playerHand = null; // プレイヤーが選んだ手
-    let countdownInterval = null;
-    let countdownValue = 5;
-
-    // 1.「動画を見るボタン」が押された時
-    startBtn.addEventListener('click', function() {
-        startBtn.style.display = 'none'; // スタートボタンを隠す
-        video.src = vids.story; // 本編動画を設定
-        video.play(); // 再生
-    });
-
-    // 動画が最後まで再生された時のイベント
-    video.addEventListener('ended', function() {
-        // 現在の動画によって次に何をするか決める
-        if (video.src.includes(vids.story)) {
-            // 本編が終わったら、じゃんけん動画へ切り替え
-            startJankenPhase();
-        } else if (video.src.includes(vids.janken)) {
-            // じゃんけん（ぐるぐる）が終わったら、判定＆結果発表
-            showResult();
-        }
-    });
-
-    // 2. じゃんけんフェーズ（カウントダウン開始）
-    function startJankenPhase() {
-        video.src = vids.janken; // じゃんけん動画に切り替え
-        video.play(); // 再生
-
-        // カウントダウンとボタンを表示
-        countdownValue = 5;
-        countdownDiv.textContent = countdownValue;
-        countdownDiv.style.display = 'block';
-        jankenBtnsDiv.style.display = 'block';
-
-        // ボタンを有効化し、選択状態をリセット
-        playerHand = null;
-        jankenButtons.forEach(btn => {
-            btn.disabled = false;
-            btn.classList.remove('selected');
-        });
-
-        // 5秒間のカウントダウンを開始 (1秒ごとに実行)
-        countdownInterval = setInterval(function() {
-            countdownValue--;
-            countdownDiv.textContent = countdownValue;
-
-            if (countdownValue <= 0) {
-                // 時間切れ
-                clearInterval(countdownInterval);
-                countdownDiv.style.display = 'none';
-                disableJankenButtons(); // ボタンを押せなくする
-                // 時間切れの場合、自動的に判定へ (playerHandはnullのまま)
-            }
-        }, 1000);
-    }
-
-    // 3. ユーザーが手（ボタン）を選んだ時
-    function playerSelect(hand) {
-        if (countdownInterval) {
-            playerHand = hand; // 選んだ手を保存
-
-            // 制限時間タイマーをストップ
-            clearInterval(countdownInterval);
-            countdownInterval = null;
-            countdownDiv.style.display = 'none'; // カウントダウンを隠す
-
-            // 選んだボタンを固定（他のボタンをグレーアウト）
-            jankenButtons.forEach(btn => {
-                btn.disabled = true;
-                if (btn.id === `btn-${hand}`) {
-                    btn.classList.add('selected'); // 選んだボタンに青枠
-                }
-            });
-            // (判定は、じゃんけん動画が終わるまで待つ)
-        }
-    }
-
-    // じゃんけんボタンをすべて無効化する関数
-    function disableJankenButtons() {
-        jankenButtons.forEach(btn => btn.disabled = true);
-    }
-
-    // 4. じゃんけん結果判定と結果動画の表示
-    function showResult() {
-        disableJankenButtons(); // (念のため) ボタンを無効化
-        jankenBtnsDiv.style.display = 'none'; // じゃんけんボタンを隠す
-
-        // 判定ロジック
-        let resultVid = vids.draw; // デフォルトは引き分け
-
-        if (!playerHand) {
-            // 時間切れ（プレイヤーが選ばなかった）は負け
-            resultVid = vids.lose;
-        } else if (playerHand === papakichiHand) {
-            resultVid = vids.draw; // 引き分け
-        } else if (
-            (playerHand === 'goo' && papakichiHand === 'cho') || // 勝ち
-            (playerHand === 'cho' && papakichiHand === 'par') || // 勝ち
-            (playerHand === 'par' && papakichiHand === 'goo')    // 勝ち
-        ) {
-            resultVid = vids.win; // プレイヤーの勝ち
-        } else {
-            resultVid = vids.lose; // プレイヤーの負け
-        }
-
-        // 判定に基づいて結果動画に切り替え
-        video.src = resultVid;
-        video.play();
-    }
-</script>
-
+<script src="app.js"></script>
 </body>
 </html>
